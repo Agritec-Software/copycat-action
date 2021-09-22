@@ -204,6 +204,7 @@ else
     git add -A
     git commit --message "${COMMIT_MESSAGE}"
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
+        git push origin ${PULL_REQUEST_BRANCH}
         echo "Creating a pull request"
        # Set up conditional parameters
         params=()
