@@ -205,7 +205,7 @@ else
     git commit --message "${COMMIT_MESSAGE}"
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
         git push origin ${PULL_REQUEST_BRANCH}
-        gh pr view "$PULL_REQUEST_BRANCH"
+        gh pr view $PULL_REQUEST_BRANCH --json state | grep "OPEN"
         if [  "$?" -ne 0 ]; then
             echo "Creating a pull request"
             # Set up conditional parameters
