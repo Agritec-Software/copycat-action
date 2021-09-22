@@ -143,36 +143,48 @@ if [[ -n "$FILTER" ]]; then
 fi
 
 
-git clone --branch ${DST_BRANCH} --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${PULL_REQ_REPO}.git ${DST_REPO_DIR}
-if [ "$?" -ne 0 ]; then
-    echo >&2 "Cloning branch '$DST_BRANCH' in '$DST_REPO' failed"
+# We first try to clone the existing pull request branch in case it exists 
+CLONE_DST_BRANCH=1
+if [ "$CREATE_PULL_REQUEST" = "true" ]; then
+    git clone --branch ${PULL_REQUEST_BRANCH} --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${PULL_REQ_REPO}.git ${DST_REPO_DIR}
+    CLONE_DST_BRANCH="$?"
+fi
+
+# If the pull request branch doesn't exist or we do not have to create a pull request
+if [ "$CLONE_DST_BRANCH" -ne 0 ]; then
+    git clone --branch ${DST_BRANCH} --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${PULL_REQ_REPO}.git ${DST_REPO_DIR}
+    if [ "$?" -ne 0 ]; then
+        echo >&2 "Cloning branch '$DST_BRANCH' in '$DST_REPO' failed"
+        if [ "$CREATE_PULL_REQUEST" = "true" ]; then
+            echo "Cannot create a pull request to '$DST_BRANCH' because it does not exist."
+            exit 1
+        else
+            echo >&2 "Falling back to default branch"
+            git clone --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${DST_REPO}.git ${DST_REPO_DIR}
+            cd ${DST_REPO_DIR} || exit "$?"
+            echo >&2 "Creating branch '$DST_BRANCH'"
+            git checkout -b ${DST_BRANCH}
+            if [ "$?" -ne 0 ]; then
+                echo >&2 "Creation of Branch '$DST_BRANCH' failed"
+                exit 1
+            fi
+            cd ..
+        fi
+    fi
+
+    #If the pull request branch doesn't exist but the DST branch does, create the new branch from there
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
-        echo "Cannot create a pull request to '$DST_BRANCH' because it does not exist."
-        exit 1
-    else
-        echo >&2 "Falling back to default branch"
-        git clone --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${DST_REPO}.git ${DST_REPO_DIR}
+        echo "Creating branch '${PULL_REQUEST_BRANCH}' for the pull-request"
         cd ${DST_REPO_DIR} || exit "$?"
-        echo >&2 "Creating branch '$DST_BRANCH'"
-        git checkout -b ${DST_BRANCH}
+        git checkout -b ${PULL_REQUEST_BRANCH}
         if [ "$?" -ne 0 ]; then
-            echo >&2 "Creation of Branch '$DST_BRANCH' failed"
+            echo >&2 "Creation of Branch '$PULL_REQUEST_BRANCH' failed"
             exit 1
         fi
         cd ..
     fi
 fi
 
-if [ "$CREATE_PULL_REQUEST" = "true" ]; then
-    echo "Creating branch '${PULL_REQUEST_BRANCH}' for the pull-request"
-    cd ${DST_REPO_DIR} || exit "$?"
-    git checkout -b ${PULL_REQUEST_BRANCH}
-    if [ "$?" -ne 0 ]; then
-        echo >&2 "Creation of Branch '$PULL_REQUEST_BRANCH' failed"
-        exit 1
-    fi
-    cd ..
-fi
 
 if [ "$CLEAN" = "true" ]; then
     if [ -f "${DST_REPO_DIR}/${DST_PATH}" ] ; then
@@ -204,7 +216,11 @@ else
     git add -A
     git commit --message "${COMMIT_MESSAGE}"
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
-        git push origin ${PULL_REQUEST_BRANCH}
+        git push -f origin ${PULL_REQUEST_BRANCH}
+        if [ "$?" -ne 0 ]; then
+            echo >&2 "Error pushing commit."
+            exit 1
+        fi
         gh pr view $PULL_REQUEST_BRANCH --json state | grep "OPEN"
         if [  "$?" -ne 0 ]; then
             echo "Creating a pull request"
