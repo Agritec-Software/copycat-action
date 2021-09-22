@@ -75,7 +75,7 @@ if [[ -n "$EXCLUDE" && -z "$FILTER" ]]; then
 fi
 
 echo "$PERSONAL_TOKEN" > .personaltoken
-gh auth login --with-token .personaltoken
+gh auth login --with-token < .personaltoken
 if [ "$?" -ne 0 ]; then
     echo >&2 "Cannot authenticate to create a PR."
     exit 1
