@@ -74,11 +74,14 @@ if [[ -n "$EXCLUDE" && -z "$FILTER" ]]; then
     FILTER="**"
 fi
 
-echo "$PERSONAL_TOKEN" > .personaltoken
-gh auth login --with-token < .personaltoken
-if [ "$?" -ne 0 ]; then
-    echo >&2 "Cannot authenticate to create a PR."
-    exit 1
+if [ "$CREATE_PULL_REQUEST" = "true" ]; then
+    echo "Authenticating with personal token"
+    echo "$PERSONAL_TOKEN" > .personaltoken
+    gh auth login --with-token < .personaltoken
+    if [ "$?" -ne 0 ]; then
+        echo >&2 "Cannot authenticate to create a PR. Remember that the minimum required scopes for the token are: 'repo', 'read:org'."
+        exit 1
+    fi
 fi
 
 BASE_PATH=$(pwd)
@@ -202,11 +205,15 @@ else
     git commit --message "${COMMIT_MESSAGE}"
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
         echo "Creating a pull request"
+       # Set up conditional parameters
+        params=()
+        [[ ! -z $PULL_REQUEST_LABELS ]] && params+=("-l ${PULL_REQUEST_LABELS}")
+
         gh pr create -t "${PULL_REQUEST_TITLE:-"[copy-cat]: $COMMIT_MESSAGE"}" \
                -b "$COMMIT_MESSAGE" \
                -B "${PULL_REQUEST_BODY:-$DST_BRANCH}" \
                -H "$PULL_REQUEST_BRANCH" \
-               -l "${PULL_REQUEST_LABELS:-''}"
+               "${params[@]}"
         if [ "$?" -ne 0 ]; then
             echo >&2 "Creation of pull request failed."
             exit 1
