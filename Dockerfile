@@ -1,8 +1,7 @@
 FROM golang:alpine3.14 as gh-build
 RUN apk add --no-cache make git
-RUN git clone https://github.com/cli/cli.git gh-cli && \
-    cd gh-cli
-RUN make && \
+RUN git clone https://github.com/cli/cli.git gh-cli
+RUN cd gh-cli && make && \
     mv ./bin/gh /usr/local/bin/
 
 
