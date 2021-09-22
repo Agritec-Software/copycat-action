@@ -195,11 +195,15 @@ else
     git commit --message "${COMMIT_MESSAGE}"
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
         echo "Creating a pull request"
-        gh pr create -t ${PULL_REQUEST_TITLE:-"[copy-cat]: $COMMIT_MESSAGE"} \
-               -b $COMMIT_MESSAGE \
-               -B ${PULL_REQUEST_BODY:-$DST_BRANCH} \
-               -H $PULL_REQUEST_BRANCH \
-               -l ${PULL_REQUEST_LABELS:-""}
+        gh pr create -t "${PULL_REQUEST_TITLE:-"[copy-cat]: $COMMIT_MESSAGE"}" \
+               -b "$COMMIT_MESSAGE" \
+               -B "${PULL_REQUEST_BODY:-$DST_BRANCH}" \
+               -H "$PULL_REQUEST_BRANCH" \
+               -l "${PULL_REQUEST_LABELS:-''}"
+        if [ "$?" -ne 0 ]; then
+            echo >&2 "Creation of pull request failed"
+            exit 1
+        fi
     else
         git push origin ${DST_BRANCH}
     fi 
