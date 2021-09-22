@@ -52,7 +52,7 @@ if [ "$CREATE_PULL_REQUEST" = "true" ]; then
         echo "PULL_REQUEST_BRANCH environment variable is missing. Cannot proceed."
         exit 1
     fi
-    if [ $PULL_REQUEST_BRANCH == "main" ] || [ $PULL_REQUEST_BRANCH == "master"]; then
+    if [ $PULL_REQUEST_BRANCH == "main" ] || [ $PULL_REQUEST_BRANCH == "master" ]; then
         echo "PULL_REQUEST_BRANCH cannot be main or master."
         exit 1
     fi
@@ -80,8 +80,8 @@ DST_PATH="${DST_PATH:-${SRC_PATH}}"
 USERNAME="${USERNAME:-${GITHUB_ACTOR}}"
 EMAIL="${EMAIL:-${GITHUB_ACTOR}@users.noreply.github.com}"
 
-SRC_BRANCH="${SRC_BRANCH:-master}"
-DST_BRANCH="${DST_BRANCH:-master}"
+SRC_BRANCH="${SRC_BRANCH:-main}"
+DST_BRANCH="${DST_BRANCH:-main}"
 
 SRC_REPO="${GITHUB_REPOSITORY}${SRC_WIKI}"
 SRC_REPO_NAME="${GITHUB_REPOSITORY#*/}${SRC_WIKI}"
