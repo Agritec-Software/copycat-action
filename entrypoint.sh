@@ -216,7 +216,7 @@ else
     git add -A
     git commit --message "${COMMIT_MESSAGE}"
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
-        git push -f origin ${PULL_REQUEST_BRANCH}
+        git push origin ${PULL_REQUEST_BRANCH}
         if [ "$?" -ne 0 ]; then
             echo >&2 "Error pushing commit."
             exit 1
