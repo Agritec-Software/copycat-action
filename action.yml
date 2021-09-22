@@ -58,6 +58,24 @@ inputs:
   email:
     description: 'The email used for associating commits made by this GitHub action'
     required: false
+  create_pull_request:
+    description: 'Enable creating a pull request instead of commiting directly'
+    required: false
+    default: 'false'
+  pull_request_branch:
+    description: 'The branch to create to push the changes for the pull request. Cannot be master or main.'
+    required: false
+  pull_request_title:
+    description: 'The title of the pull request'
+    required: false
+    default: '[copy-cat]: $COMMIT_MESSAGE'
+  pull_request_body:
+    description: 'The body of the pull request'
+    required: false
+    default: '$DST_BRANCH'
+  pull_request_labels:
+    description: 'Comma separated labels'
+    required: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -78,3 +96,9 @@ runs:
     - ${{ inputs.commit_message }}
     - ${{ inputs.username }}
     - ${{ inputs.email }}
+    - ${{ inputs.create_pull_request }}
+    - ${{ inputs.pull_request_branch }}
+    - ${{ inputs.pull_request_title }}
+    - ${{ inputs.pull_request_body }}
+    - ${{ inputs.pull_request_labels }}
+

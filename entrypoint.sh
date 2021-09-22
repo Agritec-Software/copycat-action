@@ -25,6 +25,12 @@ DST_WIKI="$INPUT_DST_WIKI"
 COMMIT_MESSAGE="$INPUT_COMMIT_MESSAGE"
 USERNAME="$INPUT_USERNAME"
 EMAIL="$INPUT_EMAIL"
+CREATE_PULL_REQUEST="$INPUT_CREATE_PULL_REQUEST"
+PULL_REQUEST_BRANCH="$INPUT_PULL_REQUEST_BRANCH"
+PULL_REQUEST_TITLE="${INPUT_PULL_REQUEST_TITLE}"
+PULL_REQUEST_BODY="${INPUT_PULL_REQUEST_BODY}"
+PULL_REQUEST_LABELS="$INPUT_PULL_REQUEST_LABELS"
+
 
 if [[ -z "$SRC_PATH" ]]; then
     echo "SRC_PATH environment variable is missing. Cannot proceed."
@@ -39,6 +45,17 @@ fi
 if [[ -z "$DST_REPO_NAME" ]]; then
     echo "DST_REPO_NAME environment variable is missing. Cannot proceed."
     exit 1
+fi
+
+if [ "$CREATE_PULL_REQUEST" = "true" ]; then
+    if [[ -z "$PULL_REQUEST_BRANCH" ]]; then
+        echo "PULL_REQUEST_BRANCH environment variable is missing. Cannot proceed."
+        exit 1
+    fi
+    if [ $PULL_REQUEST_BRANCH == "main" ] || [ $PULL_REQUEST_BRANCH == "master"]; then
+        echo "PULL_REQUEST_BRANCH cannot be main or master."
+        exit 1
+    fi
 fi
 
 if [ "$SRC_WIKI" = "true" ]; then
@@ -115,19 +132,33 @@ if [[ -n "$FILTER" ]]; then
 fi
 
 
+
 git clone --branch ${DST_BRANCH} --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${DST_REPO}.git ${DST_REPO_DIR}
 if [ "$?" -ne 0 ]; then
     echo >&2 "Cloning branch '$DST_BRANCH' in '$DST_REPO' failed"
-    echo >&2 "Falling back to default branch"
-    git clone --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${DST_REPO}.git ${DST_REPO_DIR}
-    cd ${DST_REPO_DIR} || exit "$?"
-    echo >&2 "Creating branch '$DST_BRANCH'"
-    git checkout -b ${DST_BRANCH}
+    if [ "$CREATE_PULL_REQUEST" = "true" ]; then
+        echo "Cannot create a pull request to '$DST_BRANCH' because it does not exist."
+        exit 1
+    else
+        echo >&2 "Falling back to default branch"
+        git clone --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${DST_REPO}.git ${DST_REPO_DIR}
+        cd ${DST_REPO_DIR} || exit "$?"
+        echo >&2 "Creating branch '$DST_BRANCH'"
+        git checkout -b ${DST_BRANCH}
+        if [ "$?" -ne 0 ]; then
+            echo >&2 "Creation of Branch '$DST_BRANCH' failed"
+            exit 1
+        fi
+        cd ..
+    fi
+fi
+
+if [ "$CREATE_PULL_REQUEST" = "true" ]; then
+    git checkout -b ${PULL_REQUEST_BRANCH}
     if [ "$?" -ne 0 ]; then
-        echo >&2 "Creation of Branch '$DST_BRANCH' failed"
+        echo >&2 "Creation of Branch '$PULL_REQUEST_BRANCH' failed"
         exit 1
     fi
-    cd ..
 fi
 
 if [ "$CLEAN" = "true" ]; then
@@ -159,7 +190,16 @@ else
     # Uncommitted changes
     git add -A
     git commit --message "${COMMIT_MESSAGE}"
-    git push origin ${DST_BRANCH}
+    if [ "$CREATE_PULL_REQUEST" = "true" ]; then
+        echo "Creating a pull request"
+        gh pr create -t ${PULL_REQUEST_TITLE:-"[copy-cat]: $COMMIT_MESSAGE"} \
+               -b $COMMIT_MESSAGE \
+               -B ${PULL_REQUEST_BODY:-$DST_BRANCH} \
+               -H $PULL_REQUEST_BRANCH \
+               -l ${PULL_REQUEST_LABELS:-""}
+    else
+        git push origin ${DST_BRANCH}
+    fi 
 fi
 
 echo "Copying complete 👌"
