@@ -74,6 +74,13 @@ if [[ -n "$EXCLUDE" && -z "$FILTER" ]]; then
     FILTER="**"
 fi
 
+echo "$PERSONAL_TOKEN" > .personaltoken
+gh auth login --with-token .personaltoken
+if [ "$?" -ne 0 ]; then
+    echo >&2 "Cannot authenticate to create a PR."
+    exit 1
+fi
+
 BASE_PATH=$(pwd)
 DST_PATH="${DST_PATH:-${SRC_PATH}}"
 
@@ -195,11 +202,6 @@ else
     git commit --message "${COMMIT_MESSAGE}"
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
         echo "Creating a pull request"
-        gh auth login --with-token "${PERSONAL_TOKEN}"
-        if [ "$?" -ne 0 ]; then
-            echo >&2 "Cannot authenticate to create a PR."
-            exit 1
-        fi
         gh pr create -t "${PULL_REQUEST_TITLE:-"[copy-cat]: $COMMIT_MESSAGE"}" \
                -b "$COMMIT_MESSAGE" \
                -B "${PULL_REQUEST_BODY:-$DST_BRANCH}" \
