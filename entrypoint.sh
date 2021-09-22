@@ -205,19 +205,22 @@ else
     git commit --message "${COMMIT_MESSAGE}"
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
         git push origin ${PULL_REQUEST_BRANCH}
-        echo "Creating a pull request"
-       # Set up conditional parameters
-        params=()
-        [[ ! -z $PULL_REQUEST_LABELS ]] && params+=("-l ${PULL_REQUEST_LABELS}")
+        gr pr view "$PULL_REQUEST_BRANCH"
+        if [  "$?" -ne 0 ]; then
+            echo "Creating a pull request"
+            # Set up conditional parameters
+            params=()
+            [[ ! -z $PULL_REQUEST_LABELS ]] && params+=("-l ${PULL_REQUEST_LABELS}")
 
-        gh pr create -t "${PULL_REQUEST_TITLE:-"[copy-cat]: $COMMIT_MESSAGE"}" \
-               -b "${PULL_REQUEST_BODY:-$COMMIT_MESSAGE}" \
-               -B "$DST_BRANCH" \
-               -H "$PULL_REQUEST_BRANCH" \
-               "${params[@]}"
-        if [ "$?" -ne 0 ]; then
-            echo >&2 "Creation of pull request failed."
-            exit 1
+            gh pr create -t "${PULL_REQUEST_TITLE:-"[copy-cat]: $COMMIT_MESSAGE"}" \
+                -b "${PULL_REQUEST_BODY:-$COMMIT_MESSAGE}" \
+                -B "$DST_BRANCH" \
+                -H "$PULL_REQUEST_BRANCH" \
+                "${params[@]}"
+            if [ "$?" -ne 0 ]; then
+                echo >&2 "Creation of pull request failed."
+                exit 1
+            fi
         fi
     else
         git push origin ${DST_BRANCH}
