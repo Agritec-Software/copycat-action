@@ -211,8 +211,8 @@ else
         [[ ! -z $PULL_REQUEST_LABELS ]] && params+=("-l ${PULL_REQUEST_LABELS}")
 
         gh pr create -t "${PULL_REQUEST_TITLE:-"[copy-cat]: $COMMIT_MESSAGE"}" \
-               -b "$COMMIT_MESSAGE" \
-               -B "${PULL_REQUEST_BODY:-$DST_BRANCH}" \
+               -b "${PULL_REQUEST_BODY:-$COMMIT_MESSAGE}" \
+               -B "$DST_BRANCH" \
                -H "$PULL_REQUEST_BRANCH" \
                "${params[@]}"
         if [ "$?" -ne 0 ]; then
