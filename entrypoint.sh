@@ -87,6 +87,7 @@ SRC_REPO="${GITHUB_REPOSITORY}${SRC_WIKI}"
 SRC_REPO_NAME="${GITHUB_REPOSITORY#*/}${SRC_WIKI}"
 DST_REPO="${DST_OWNER}/${DST_REPO_NAME}${DST_WIKI}"
 DST_REPO_NAME="${DST_REPO_NAME}${DST_WIKI}"
+PULL_REQ_REPO="$DST_REPO"
 
 DST_REPO_DIR=dst_repo_dir
 FINAL_SOURCE="${SRC_REPO_NAME}/${SRC_PATH}"
@@ -132,8 +133,7 @@ if [[ -n "$FILTER" ]]; then
 fi
 
 
-
-git clone --branch ${DST_BRANCH} --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${DST_REPO}.git ${DST_REPO_DIR}
+git clone --branch ${DST_BRANCH} --single-branch --depth 1 https://${PERSONAL_TOKEN}@github.com/${PULL_REQ_REPO}.git ${DST_REPO_DIR}
 if [ "$?" -ne 0 ]; then
     echo >&2 "Cloning branch '$DST_BRANCH' in '$DST_REPO' failed"
     if [ "$CREATE_PULL_REQUEST" = "true" ]; then
@@ -154,11 +154,14 @@ if [ "$?" -ne 0 ]; then
 fi
 
 if [ "$CREATE_PULL_REQUEST" = "true" ]; then
+    echo "Creating branch '${PULL_REQUEST_BRANCH}' for the pull-request"
+    cd ${DST_REPO_DIR} || exit "$?"
     git checkout -b ${PULL_REQUEST_BRANCH}
     if [ "$?" -ne 0 ]; then
         echo >&2 "Creation of Branch '$PULL_REQUEST_BRANCH' failed"
         exit 1
     fi
+    cd ..
 fi
 
 if [ "$CLEAN" = "true" ]; then
